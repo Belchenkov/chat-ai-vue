@@ -2,3 +2,4 @@
 /.vscode
 /node_modules
 /chat-ai-api/node_modules
+/chat-ai-api/.env
