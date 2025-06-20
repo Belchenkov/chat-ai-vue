@@ -31,8 +31,24 @@ app.post("/register-user", async (req, res): Promise<any> => {
 	try {
 		const userId = email.replace(/[^a-zA-Z0-9_-]/g, "_");
 
+		const userResponse = await chatClient.queryUsers({
+			id: { $eq: userId },
+		});
+
+		if (!userResponse.users.length) {
+			await chatClient.upsertUser({
+				id: userId,
+				name,
+				// @ts-ignore
+				email,
+				role: 'user',
+			});
+		}
+
 		res.status(200).json({
-			message: "Successfully registered user!",
+			userId,
+			name,
+			email,
 		});
 	} catch (error) {
 		res.status(500).json({
