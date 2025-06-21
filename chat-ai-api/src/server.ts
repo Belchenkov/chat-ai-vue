@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { StreamChat } from 'stream-chat';
+import { OpenAI } from "openai";
 
 dotenv.config();
 
@@ -16,6 +17,11 @@ const chatClient = StreamChat.getInstance(
 	process.env.STREAM_API_KEY!,
 	process.env.STREAM_API_SECRET!
 );
+
+// Initialize OpenAI
+const openai = new OpenAI({
+	apiKey: process.env.OPENAI_API_KEY!,
+});
 
 // Register user with Stream Chat
 // @ts-ignore
@@ -50,6 +56,38 @@ app.post("/register-user", async (req, res): Promise<any> => {
 			name,
 			email,
 		});
+	} catch (error) {
+		res.status(500).json({
+			error: "Internal Server Error!",
+		});
+	}
+
+});
+
+// Send message to AI
+app.post("/chat", async (req, res): Promise<any> => {
+	const { message, userId } = req.body;
+
+	if (!message || !userId) {
+		res.status(400).json({
+			error: "Message and User are required!",
+		});
+	}
+
+	try {
+		// Verify user exists
+		const userResponse = await chatClient.queryUsers({
+			id: userId,
+		});
+
+		if (!userResponse.users.length) {
+			return res.status(404).json({
+				error: "User Not Found. Please register first",
+			});
+		}
+
+		res.send('Success');
+
 	} catch (error) {
 		res.status(500).json({
 			error: "Internal Server Error!",
