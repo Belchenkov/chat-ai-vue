@@ -86,14 +86,38 @@ app.post("/chat", async (req, res): Promise<any> => {
 			});
 		}
 
-		res.send('Success');
+		// Send message to OpenAI GPT-4
+		const response = await openai.chat.completions.create({
+			model: 'gpt-4',
+			messages: [
+				{ role: 'user', content: message },
+			],
+		});
 
+		const aiMessage: string = response.choices[0].message?.content ?? 'No response from AI';
+
+		// Create or get channel
+		const channel = chatClient.channel('messaging', `chat-${userId}`, {
+			// @ts-ignore
+			name: 'AI Chat',
+			created_by_id: 'ai_bot'
+		});
+
+		await channel.create();
+		await channel.sendMessage({
+			text: aiMessage,
+			user_id: 'ai_bot',
+		});
+
+		res.status(200).json({
+			reply: aiMessage,
+		});
 	} catch (error) {
+		console.log(error, 'error');
 		res.status(500).json({
 			error: "Internal Server Error!",
 		});
 	}
-
 });
 
 const PORT = process.env.PORT || 5000;
