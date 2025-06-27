@@ -3,6 +3,11 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { StreamChat } from 'stream-chat';
 import { OpenAI } from "openai";
+import { eq } from "drizzle-orm";
+import { ChatCompletionMessage } from "openai/resources";
+
+import { db } from "./config/database.js";
+import { chats, users } from './db/schema.js';
 
 dotenv.config();
 
@@ -51,6 +56,22 @@ app.post("/register-user", async (req, res): Promise<any> => {
 			});
 		}
 
+		// Check for existing user in db
+		const existingUser = await db
+			.select()
+			.from(users)
+			.where(eq(users.userId, userId));
+
+		if (!existingUser.length) {
+			console.log(`User ${userId} does not exist in the database. Adding them...`);
+
+			await db.insert(users).values({
+				userId,
+				name,
+				email,
+			});
+		}
+
 		res.status(200).json({
 			userId,
 			name,
@@ -86,6 +107,18 @@ app.post("/chat", async (req, res): Promise<any> => {
 			});
 		}
 
+		// Check user in db
+		const existingUser = await db
+			.select()
+			.from(users)
+			.where(eq(users.userId, userId));
+
+		if (!existingUser.length) {
+			return res.status(404).json({
+				error: "User Not Found. Please register first",
+			});
+		}
+
 		// Send message to OpenAI GPT-4
 		const response = await openai.chat.completions.create({
 			model: 'gpt-4',
@@ -95,6 +128,13 @@ app.post("/chat", async (req, res): Promise<any> => {
 		});
 
 		const aiMessage: string = response.choices[0].message?.content ?? 'No response from AI';
+
+		// Save chat to db
+		await db.insert(chats).values({
+			userId,
+			message,
+			reply: aiMessage,
+		});
 
 		// Create or get channel
 		const channel = chatClient.channel('messaging', `chat-${userId}`, {
