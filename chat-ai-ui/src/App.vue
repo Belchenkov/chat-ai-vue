@@ -2,8 +2,12 @@
 </script>
 
 <template>
+  <nav>
+    <RouterLink to="/">Home</RouterLink>
+    <RouterLink to="/chat">Chat</RouterLink>
+  </nav>
   <div>
-    <h1>My App</h1>
+    <RouterView />
   </div>
 </template>
 
