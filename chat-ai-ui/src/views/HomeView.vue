@@ -1,7 +1,13 @@
 <script setup lang="ts">
   import { ref } from "vue";
+  import { useRouter } from "vue-router";
+  import axios from "axios";
 
   import robotImage from '../assets/robot.png';
+  import { useUserStore } from "../stores/user.ts";
+
+  const userStore = useUserStore();
+  const router = useRouter();
 
   const name = ref('');
   const email = ref('');
@@ -14,7 +20,26 @@
       return;
     }
 
+    loading.value = true;
+    error.value = '';
 
+    try {
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/register-user`, {
+        name: name.value,
+        email: email.value,
+      });
+
+      userStore.setUser({
+        userId: data.userId,
+        name: data.name,
+      });
+
+      await router.push('/chat');
+    } catch (err) {
+      error.value = 'Something went wrong. Please try again';
+    } finally {
+      loading.value = false;
+    }
   };
 </script>
 
