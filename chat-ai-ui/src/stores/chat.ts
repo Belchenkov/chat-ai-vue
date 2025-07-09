@@ -19,4 +19,25 @@ export const useChatStore = defineStore('chat', () => {
 	const isLoading = ref(false);
 
 	const userStore = useUserStore();
+
+	const loadChatHistory = async () => {
+		if (!userStore.userId) {
+			return;
+		}
+
+		try {
+			const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/get-messages`, {
+				userId: userStore.userId,
+			});
+
+			messages.value = data.messages
+				.flatMap((msg: ChatMessage): FormattedMessage[] => [
+					{ role: 'user', content: msg.message },
+					{ role: 'ai', content: msg.reply },
+				])
+				.filter((msg: FormattedMessage) => msg.content);
+		} catch (error) {
+			console.error('Error loading chat history: ', error);
+		}
+	};
 });
