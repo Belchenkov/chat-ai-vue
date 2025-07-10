@@ -40,4 +40,10 @@ export const useChatStore = defineStore('chat', () => {
 			console.error('Error loading chat history: ', error);
 		}
 	};
+
+	return {
+		messages,
+		isLoading,
+		loadChatHistory,
+	};
 });
