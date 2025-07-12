@@ -5,6 +5,7 @@
   import Header from "../components/Header.vue";
   import { useUserStore } from "../stores/user.ts";
   import { useChatStore } from "../stores/chat.ts";
+  import ChatInput from "../components/ChatInput.vue";
 
   const userStore = useUserStore();
   const chatStore = useChatStore();
@@ -48,6 +49,17 @@
         >{{ msg.content }}</div>
       </div>
     </div>
+  </div>
+
+  <div
+      v-if="chatStore.isLoading"
+      class="flex justify-start"
+  >
+    <div class="bg-gray-700 text-white px-4 py-2 rounded-lg">
+      <span class="animate-pulse">AI is thinking...</span>
+    </div>
+
+    <ChatInput @send="chatStore.sendMessage" />
   </div>
 </template>
 
