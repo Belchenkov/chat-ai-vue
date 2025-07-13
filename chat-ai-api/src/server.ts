@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { StreamChat } from 'stream-chat';
 import { OpenAI } from "openai";
 import { eq } from "drizzle-orm";
-import { ChatCompletionMessage } from "openai/resources";
+import { ChatCompletionMessage, ChatCompletionMessageParam } from "openai/resources";
 
 import { db } from "./config/database.js";
 import { chats, users } from './db/schema.js';
@@ -119,12 +119,29 @@ app.post("/chat", async (req, res): Promise<any> => {
 			});
 		}
 
+		// Fetch users past messages for context
+		const chatHistory = await db
+			.select()
+			.from(chats)
+			.where(eq(chats.userId, userId))
+			.orderBy(chats.createdAt)
+			.limit(10);
+
+		// Format chat history for Open AI
+		const conversation: ChatCompletionMessageParam[] = chatHistory.flatMap((chat) => {
+			return [
+				{ role: 'user', content: chat.reply },
+				{ role: 'assistant', content: chat.reply },
+			];
+		});
+
+		// Add latest user messages to the conversation
+		conversation.push({ role: 'user', content: message });
+
 		// Send message to OpenAI GPT-4
 		const response = await openai.chat.completions.create({
 			model: 'gpt-4',
-			messages: [
-				{ role: 'user', content: message },
-			],
+			messages: conversation as ChatCompletionMessageParam[]
 		});
 
 		const aiMessage: string = response.choices[0].message?.content ?? 'No response from AI';
